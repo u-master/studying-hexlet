@@ -146,3 +146,41 @@
   * Клик на кнопку с типом submit начинает отправку формы на сервер.
   * Вращение колесом мышки в textarea передвигает текст если он не помещается
   * Вызов контекстного меню с помощью правого клика мышки
+
+# Формы
+
+Отправку формы нужно перехватывать на событии submit самой формы.
+
+    form.addEventListener('submit', (e) => {
+      // Если хотим работать с формой через JS, то нужно остановить отправку:
+      e.preventDefault();
+      // что-то делаем
+    });
+    
+Работа с данными формы:
+
+  * Объект [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData).
+  
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          // Данные формы извлекаются из DOM автоматически 
+          const formData = new FormData(e.target); // элемент формы взят из события
+          // Теперь с ними можно работать
+          formData.get('email'); // example@example.com
+          // values() возвращает итератор, поэтому преобразуем в массив
+          [...formData.values()]; // ['example@example.com', 'supersecret']
+          // Тоже итератор
+          [...formData.entries()]; // [['email', 'example@example.com'], ['password', 'supersecret']]
+          // Преобразование в обычный объект
+          Object.fromEntries(formData); // { email: 'example@example.com', password: 'supersecret' }
+        });
+    
+  * Свойство формы elements
+  
+        form.elements.email // <input name="email" ...
+        form.elements.password // <input name="password" ...
+
+        // Обработка событий элемента формы (например, для валидации)
+        form.elements.email.addEventListener('change', () => {
+            // Обработка
+        });
