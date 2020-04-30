@@ -221,3 +221,81 @@
         form.elements.email.addEventListener('change', () => {
             // Обработка
         });
+        
+# AJAX (Asynchronous JavaScript and XML)
+  До появления HTML5, браузеры предоставляли (и сейчас предоставляют) специальный объект *XMLHttpRequest*. Работать с ним крайне неудобно и, по сути, все использовали обертку созданную в jQuery.
+  
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = () => {
+      if (this.readyState == 4 && this.status == 200) {
+        document.getElementById('demo').innerHTML = this.responseText;
+      }
+    };
+    request.open('GET', '/api/v1/articles/152.json', true);
+    request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    request.send();
+
+  С появлением стандарта HTML5, появился новый механизм для http запросов. [Полифилл](https://github.com/github/fetch)
+  
+    // const promise = fetch(url[, options]);
+    fetch('/api/v1/articles/152.json')
+      .then((response) => {
+        console.log(response.status); // => 200
+        console.log(response.headers.get('Content-Type'));
+        return response.json();
+       })
+      .then((article) => {
+        console.log(article.title); // => 'Как использовать fetch?'
+      })
+      .catch(console.error);
+
+  Обратите внимание на то что response.json тоже возвращает промис. Кроме json данные можно получать, используя функции blob, text, formData и arrayBuffer.
+  
+  Отправка формы POST запросом:
+
+    const form = document.querySelector('form');
+    fetch('/users', {
+      method: 'POST',
+      body: new FormData(form),
+    });
+
+  Отправка формы как json:
+
+    fetch('/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: 'Hubot',
+        login: 'hubot',
+      })
+    })
+
+# URL
+
+  Распарсить или собрать url легко и просто не получалось. С одной стороны, можно всегда воспользоваться сторонними библиотеками, которых достаточно много, но с другой, в браузерах уже есть встроенный для этого механизм (обычно добавляется полифиллами).
+  
+    const url = new URL('../cats', 'http://www.example.com/dogs');
+    console.log(url.hostname); // => www.example.com
+    console.log(url.pathname); // => /cats
+
+    url.hash = 'tabby';
+    console.log(url.href); // => http://www.example.com/cats#tabby
+
+    url.pathname = 'démonstration.html';
+    console.log(url.href); // => http://www.example.com/demonstration.html
+
+  А вот как можно работать с query параметрами:
+
+    // https://some.site/?id=123
+    const parsedUrl = new URL(window.location.href);
+    console.log(parsedUrl.searchParams.get('id')); // => 123
+    parsedUrl.searchParams.append('key', 'value')
+    console.log(parsedUrl); // => https://some.site/?id=123&key=value
+
+  *fetch* умеет работать с объектом *URL* напрямую:
+
+    const response = await fetch(new URL('http://www.example.com/démonstration.html'));
+
+
