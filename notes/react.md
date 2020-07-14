@@ -384,3 +384,94 @@ React предоставляет набор функций, предназнач
     };
 
 React нормализует события так, что они имеют консистентные свойства в различных браузерах. Кроме того, в формах добавляется событие `onChange`, которое ведёт себя в соответствии со своим названием и сильно упрощает работу.
+
+## Формы
+
+В отличие от прямой работы с DOM, в React источником данных является состояние. Формы не являются исключением. Любое изменение в форме, посимвольно, если это ввод, должно быть перенесено в состояние. А элементы форм, чьи данные хранятся в состоянии React, называются управляемые компоненты (controlled components).
+
+    class TextInput extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { text: this.props.text };
+      }
+
+      handleSubmit = (e) => {
+        e.preventDefault();
+        alert(`A name was submitted: ${this.state.text}`);
+      };
+
+      handleChange = (e) => {
+        this.setState({ text: e.target.value });
+      };
+
+      render() {
+        return <form onSubmit={this.handleSubmit}>
+          <input onChange={this.handleChange} value={this.state.text} />
+          <input type='submit' value='Submit' />
+        </form>;
+      }
+    }
+
+### `<textarea>`
+
+В HTML значение `<textarea>` устанавливается как его содержимое:
+
+    <textarea>
+      Like this
+    </textarea>
+
+В React для этого используется атрибут `value`:
+
+    onChange = (e) => {
+      this.setState({ text: e.target.value });
+    };
+    render() {
+      return <textarea onChange={this.onChange} value={this.state.text} />;
+    }
+    
+Стоит отметить, что событие `onChange` в React работает так, как ожидается, в отличие от `onChange` в HTML, который срабатывает только когда элемент теряет фокус. Поэтому мы гарантировано получаем срабатывание события на каждое изменение. При этом данные из элемента формы извлекаются обычным способом через `e.target.value`. Ну а дальше всё по старой схеме — данные обновляются в состоянии.
+
+### Выпадающий список
+
+В HTML текущий элемент выбирается с помощью атрибута `selected`, проставленного на нужном `option`. React предлагает другой, более простой и удобный способ. Достаточно проставить атрибут `value` компонента `select` в нужное значение. 
+
+    class FlavorForm extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { value: '' };
+      }
+
+      handleChange = (e) => {
+        this.setState({ value: e.target.value });
+      };
+
+      handleSubmit = (e) => {
+        e.preventDefault();
+        alert(`Your favorite flavor is: ${this.state.value}`);
+      };
+
+      render() {
+        return (
+          <form onSubmit={this.handleSubmit}>
+            <label>
+              Pick your favorite La Croix flavor:
+              <select value={this.state.value} onChange={this.handleChange}>
+                <option value="grapefruit">Grapefruit</option>
+                <option value="lime">Lime</option>
+                <option value="coconut">Coconut</option>
+                <option value="mango">Mango</option>
+              </select>
+            </label>
+            <input type="submit" value="Submit" />
+          </form>
+        );
+      }
+    }
+    
+### Чекбокс и радиокнопка
+
+Оба этих типа поддерживают атрибут `checked`. Если он выставлен, то элемент отмечается выбранным.
+
+    <input name="isGoing" type="checkbox" checked={this.state.isGoing} onChange={this.handleInputChange} />
+
+// to be continue...
