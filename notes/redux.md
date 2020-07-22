@@ -97,6 +97,29 @@ Redux посылает специальное действие (*@@redux/INIT*),
 Если редьюсер реализован правильно и **содержит секцию default в switch**, то контейнер заполнится данными из `initState`. 
 В коде выше, функция `createStore` вызовет редьюсер так: `reducer(initState, '@@redux/INIT')`. Затем выполнится ветка `default` и состоянием контейнера станет число `initState`.
 
+## Подписка
+
+Можно подписаться на изменение состояния функцией `store.subscribe`. Ее параметром является колбэк функция, которая вызывается при изменении стейта. Например, нам нужно в реакте отрисовывать компонент при изменении redux-состояния.
+
+    // Элемент для подключения React
+    const containerElement = document.getElementById('container');
+    
+    // Подписываемся на изменения состояния внутри контейнера
+    // На каждое изменение отрисовываем наш компонент заново
+    store.subscribe(() => {
+      const state = store.getState();
+      ReactDOM.render(
+        <Increment dispatch={store.dispatch} count={state} increment={increment} />,
+        containerElement,
+      );
+    });
+    
+    // Первый раз нужно отрисовать руками
+    ReactDOM.render(
+      <Increment dispatch={store.dispatch} increment={increment} />,
+      containerElement,
+    );
+
 ## Комбинирование редьюсеров
 
 С ростом количества сущностей (состояний), редьюсер становится очень тяжёлым. Огромный кусок кода, который делает всё.
@@ -112,17 +135,17 @@ Redux посылает специальное действие (*@@redux/INIT*),
         { id: 23, todoId: 3, text: 'great!' },
       ],
     }
-
+    
     import { combineReducers, createStore } from 'redux';
-
+    
     const todosReducer = (state = [], action) => {
       // сюда попадут данные из todos
     };
-
+    
     const commentsReducer = (state = [], action) => {
       // сюда попадут данные из comments
     };
-
+    
     const rootReducer = combineReducers({
       todos: todosReducer,
       comments: commentsReducer,
@@ -140,7 +163,7 @@ Redux посылает специальное действие (*@@redux/INIT*),
           // ...
       }
     };
-
+    
     const comments = (state = {}, action) => {
       switch (action.type) {
         // При удалении ToDo также нужно удалить все его комментарии
@@ -149,3 +172,123 @@ Redux посылает специальное действие (*@@redux/INIT*),
       }
     };
 
+## Мидлвары (middlewares)
+
+Мидлвары — функции, которые последовательно вызываются в процессе обновления контейнера.
+
+Общий принцип работы таков:
+  * Мидлвары встраиваются в хранилище при его создании.
+  * Во время диспатчинга (отправки действий) данные проходят через них и только затем попадают в редьюсер.
+
+Создаются мидлвары во время инициализации контейнера. Если нет параметра начального состояния, 
+можно мидлвары указывать вторым параметром - redux умеет их различать.
+Однако, перед тем как передать мидлвар в функцию `createStore`, нужно применить к нему функцию `applyMiddleware`
+
+    import { createStore, applyMiddleware } from 'redux';
+    
+    const store = createStore(
+      reducer,
+      /* preloadedState, */
+      applyMiddleware(thunk)
+    )
+
+В случае если мидлваров несколько, придётся воспользоваться функцией `compose`:
+
+    import { createStore, applyMiddleware, compose } from 'redux';
+    import thunk from 'redux-thunk';
+    import logger from 'redux-logger';
+    
+    const store = createStore(
+      reducer,
+      /* preloadedState, */
+      compose(
+        applyMiddleware(thunk),
+        applyMiddleware(logger)
+      ),
+    )
+
+### Расширение Redux DevTools
+
+Для Redux написано специальное браузерное расширение Redux DevTools. Установите его в свой браузер.
+Ниже код подключения этого расширения к хранилищу:
+
+    const reduxDevtools = window.__REDUX_DEVTOOLS_EXTENSION__;
+    const store = createStore(
+       reducer,
+       /* preloadedState, */
+        reduxDevtools && reduxDevtools(),
+     );
+
+Обратите внимание на то, что он не требует использования функции `applyMiddleware`.
+
+## React Redux
+
+Команда Redux создала библиотеку react-redux, которая значительно упрощает привязку Redux к React. Далее мы пройдём все этапы по её подключению к React-проекту.
+
+### Провайдер
+
+*Провайдер* (Provider) — корневой React-компонент, который делает Redux-контейнер доступным для всего приложения. **Он находится на верхнем уровне JSX** и "оборачивает" в себя все остальные компоненты. Провайдер кроме прочего, **выполняет подписку** через `store.subscribe`. Это значит, что больше не придётся беспокоиться об обновлении приложения при изменении данных внутри контейнера.
+
+    import React from 'react';
+    import { createStore } from 'redux';
+    import { render } from 'react-dom';
+    import { Provider } from 'react-redux'; // импорт компонента!
+    import TasksBox from './components/TasksBox.jsx';
+    import reducers from './reducers.jsx'
+
+    // Контейнер передаётся в провайдер
+    const store = createStore(reducers);
+
+    render(
+      <Provider store={store}>
+        <TasksBox />
+      </Provider>,
+      document.getElementById('container'),
+    );
+
+### `connect`
+
+Для связывания данных из контейнера с пропсами конкретного компонента, react-redux предоставляет функцию `connect`.
+Также функция `connect` **пробрасывает в компонент дополнительные пропсы**. Самый важный из них - **функция `dispatch`**. Эта функция работает точь-в-точь как и store.dispatch. Ей нужно передать действие, что в свою очередь запустит цепочку вызовов до перерисовки.
+
+    import React from 'react';
+    import { connect } from 'react-redux';
+    
+    // Эта функция, берет нужные данные из контейнера и отдаёт их компоненту
+    const mapStateToProps = state => {
+      const props = {
+        tasks: state.tasks,
+      }
+      return props;
+    };
+
+    class TasksBox extends React.Component {
+      handleAddTask = (e) => {
+        e.preventDefault();
+        // dispatch!
+        const { dispatch, newTaskText } = this.props;
+        dispatch(addTask({ text: newTaskText }));
+      };
+      
+      render() {
+        // Извлекаем задачи из свойств
+        const { tasks } = this.props;
+        // Отрисовываем задачи
+        <div>{/* logic with this.handleAddTask */}</div>
+      }
+    }
+
+    // connect соединяет контейнер с текущим компонентом
+    // Наружу экспортируется компонент, который используется как обычно (пример выше)
+    export default connect(mapStateToProps)(TasksBox);
+    
+Функция mapStateToProps принимает на вход состояние из контейнера и должна возвратить объект, свойства которого станут props в компоненте. В тривиальном случае мы всегда можем реализовывать эту функцию так `state => state`. Но делать так не стоит. Более того, всю предварительную обработку данных, подготовленных для вывода, стоит делать именно здесь. В идеале в компоненты должны попадать уже готовые к выводу данные.
+
+### Файловая структура
+
+Имея такое количество сущностей, возникает закономерный вопрос: как их раскладывать в файловой системе. Обычно делают так:
+
+    actions/index.js
+    components/App.jsx
+    reducers/index.js
+    index.jsx
