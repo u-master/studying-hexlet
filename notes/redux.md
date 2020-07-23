@@ -371,3 +371,67 @@ Redux посылает специальное действие (*@@redux/INIT*),
   * Не нужно описывать поведение по умолчанию, когда возвращается сам state.
   * Стало невозможным отправлять неправильное действие, так как каждая функция-обработчик формируется на основании функций, генерирующих действия.
 
+## Структура состояния, нормализация
+
+*Из официальной документации* [https://redux.js.org/recipes/structuring-reducers/normalizing-state-shape](https://redux.js.org/recipes/structuring-reducers/normalizing-state-shape)
+
+Основные принципы организации данных в контейнере:
+
+  * Каждая сущность хранится в своём редьюсере.
+  * Коллекция сущностей одного типа хранится в виде объекта, где ключи — идентификаторы объектов, а значения — сами объекты.
+  * Порядок данных в этом объекте, задаётся отдельным массивом состоящим только из идентификаторов.
+  * Данные ссылаются друг на друга только по идентификаторам
+
+Пример нормализованного состояния:
+
+    {
+        posts : {
+            byId : {
+                "post1" : {
+                    id : "post1",
+                    author : "user1",
+                    body : "......",
+                },
+                "post2" : {
+                    id : "post2",
+                    author : "user2",
+                    body : "......",
+                }
+            },
+            allIds : ["post1", "post2"]
+        },
+        comments : {
+            byId : {
+                "comment1" : {
+                    id : "comment1",
+                    postId: "post1",
+                    author : "user2",
+                    comment : ".....",
+                },
+                "comment2" : {
+                    id : "comment2",
+                    postId: "post2",
+                    author : "user3",
+                    comment : ".....",
+                }
+            },
+            allIds : ["comment1", "comment2"]
+        },
+        users : {
+            byId : {
+                "user1" : {
+                    username : "user1",
+                    name : "User 1",
+                },
+                "user2" : {
+                    username : "user2",
+                    name : "User 2",
+                },
+                "user3" : {
+                    username : "user3",
+                    name : "User 3",
+                }
+            },
+            allIds : ["user1", "user2", "user3"]
+        }
+    }
